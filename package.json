@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "env-cmd -f .env node app.js",
+    "prod": "node app.js",
     "dev": "env-cmd -f .env nodemon app.js",
     "test": "jest"
   },
