@@ -225,7 +225,7 @@ export async function resetPassword(req, res) {
         req.log.error("password do not match")
         return res.status(400).json({
             success: false,
-            message: "Passwords do not match"
+            message: "Passwords do not match please try again"
         });
     }
 
