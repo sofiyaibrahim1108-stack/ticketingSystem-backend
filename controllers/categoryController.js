@@ -106,9 +106,27 @@ export function deleteCategory(req, res) {
     })
 }
 
+//GET CATEGORY BY ID
+export function getCategoryById(req, res) {
+  const { categoryId } = req.params
+  console.log("Fetching categoryId:", categoryId);
+
+  req.db.query(categoryQuery.getCategoryById, [categoryId], (err, result) => {
+    if (err) return res.status(500).json({ success: false, message: "db error" })
+
+    console.log("DB result:", result);
+
+    if (result.length === 0) return res.status(404).json({ success: false, message: "category not found" })
+
+    return res.json({ success: true, category: result[0] })
+  })
+}
+
+
 // SETUP ROUTES
 export function setUpCategoryRoutes(app) {
     app.get("/api/category/list", authMiddleware, adminMiddleware, getCategory);
+    app.get("/api/category/:categoryId", authMiddleware, adminMiddleware, getCategoryById)
     app.post("/api/category", authMiddleware, adminMiddleware, createCategory);
     app.put("/api/category/:categoryId", authMiddleware, adminMiddleware, updateCategory);
     app.delete("/api/category/:categoryId", authMiddleware, adminMiddleware, deleteCategory);
