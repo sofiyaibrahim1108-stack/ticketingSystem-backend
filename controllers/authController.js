@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";    
+import bcrypt from "bcrypt";
 import authQuery from "../queries/authQuery.js";
 import { EncryptJWT, jwtDecrypt } from "jose";
 import sendMail from "../utils/mail.js";
@@ -11,15 +11,18 @@ export async function signUp(req, res) {
     const { username, email, password, confirmPassword, role } = req.body;
 
     if (!username || !email || !password || !confirmPassword || !role) {
+        req.log.error("All fileds are required")
         return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
     if (password !== confirmPassword) {
+        req.log.error("password do not match")
         return res.status(400).json({ success: false, message: "Passwords do not match" });
     }
 
     req.db.execute(authQuery.getUserByEmail, [email], async (err, result) => {
         if (err) {
+            req.log.error("DB error", err)
             return res.status(500).json({ success: false, message: "Database error", error: err });
         }
 
@@ -31,6 +34,7 @@ export async function signUp(req, res) {
 
         req.db.execute(authQuery.insertUser, [username, email, hashedPassword, role], (err, result) => {
             if (err) {
+                req.log.error("failed to create user", err)
                 return res.status(500).json({ success: false, message: "Failed to create user", error: err });
             }
 
@@ -43,11 +47,13 @@ export async function signUp(req, res) {
 export async function login(req, res) {
     const { username, password } = req.body;
     if (!username || !password) {
+        req.log.error("password do not match")
         return res.status(400).json({ success: false, message: "Username & password required" });
     }
 
     req.db.execute(authQuery.getUserByUsername, [username], async (err, result) => {
         if (err) {
+            req.log.error("DB error", err)
             return res.status(500).json({ success: false, message: "Database error" });
         }
         if (result.length === 0) {
@@ -59,6 +65,7 @@ export async function login(req, res) {
         if (!valid) return res.status(401).json({ success: false, message: "Invalid credentials" });
 
         if (!user.email) {
+            req.log.error("user email not defined")
             return res.status(500).json({ success: false, message: "User email not defined, cannot send OTP" });
         }
 
@@ -95,6 +102,7 @@ export async function verifyOtp(req, res) {
     const { otp, tempToken } = req.body;
 
     if (!otp || !tempToken) {
+        req.log.error("otp and token required")
         return res.status(400).json({ success: false, message: "OTP & token required" });
     }
 
@@ -108,6 +116,7 @@ export async function verifyOtp(req, res) {
     const data = otpStore.get(payload.userId);
     if (!data || Date.now() > data.expiresAt) {
         otpStore.delete(payload.userId);
+        req.log.error("otp expired")
         return res.status(400).json({ success: false, message: "OTP expired" });
     }
 
@@ -115,14 +124,16 @@ export async function verifyOtp(req, res) {
         data.attempts++;
         if (data.attempts >= 3) {
             otpStore.delete(payload.userId);
+            req.log.error("too many attemp")
             return res.status(429).json({ success: false, message: "Too many attempts" });
         }
+        req.log.error("invalid")
         return res.status(401).json({ success: false, message: "Invalid OTP" });
     }
 
     otpStore.delete(payload.userId);
 
-    
+
     if (payload.purpose === "RESET") {
         const resetToken = await new EncryptJWT({
             userId: payload.userId,
@@ -137,6 +148,7 @@ export async function verifyOtp(req, res) {
 
     req.db.execute(authQuery.getUserById, [payload.userId], async (err, result) => {
         if (err || result.length === 0) {
+            req.log.error("db error", err)
             return res.status(500).json({ success: false });
         }
 
@@ -166,11 +178,13 @@ export async function forgotPassword(req, res) {
     const { email } = req.body;
 
     if (!email) {
+        req.log.error("email required")
         return res.status(400).json({ success: false, message: "Email required" });
     }
 
     req.db.execute(authQuery.getUserByEmail, [email], async (err, result) => {
         if (err) {
+            req.log.error("db error", err)
             return res.status(500).json({ success: false, message: "Database error" });
         }
         if (result.length === 0) {
@@ -200,6 +214,7 @@ export async function resetPassword(req, res) {
     const { tempToken, newPassword, confirmPassword } = req.body;
 
     if (!tempToken || !newPassword || !confirmPassword) {
+        req.log.error("all field are required")
         return res.status(400).json({
             success: false,
             message: "All fields required"
@@ -207,6 +222,7 @@ export async function resetPassword(req, res) {
     }
 
     if (newPassword !== confirmPassword) {
+        req.log.error("password do not match")
         return res.status(400).json({
             success: false,
             message: "Passwords do not match"
@@ -237,6 +253,7 @@ export async function resetPassword(req, res) {
         [hashedPassword, payload.userId],
         (err) => {
             if (err) {
+                req.log.error("password update failed", err)
                 return res.status(500).json({
                     success: false,
                     message: "Password update failed"
