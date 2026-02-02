@@ -18,7 +18,7 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173", // Use an env variable
+  origin: process.env.FRONTEND_URL || "http://localhost:5173", 
   credentials: true
 }));
 
@@ -31,15 +31,16 @@ app.use(requestLogger);
 app.set("view engine", "ejs");
 
 const db = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME || 'ticketingsystem',
-  port: process.env.DB_PORT || 3306,
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQL_DATABASE,
+  port: process.env.MYSQLPORT,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
+
 
 
 db.getConnection((err, connection) => {
